@@ -39,24 +39,50 @@ def connect(service):
     client = session.client(service)
     return client
 
+
 @ec2.command("create")
 @click.argument("ami", type=click.Choice(["ubuntu", "amazon-linux"], case_sensitive=False))
 @click.argument("instance_type", type=click.Choice(["t3.micro", "t2.small"], case_sensitive=False))
-def create_ec2(ami, instance_type):
+@click.argument("subnet", type=click.Choice(["subnet-1", "subnet-2"], case_sensitive=False))
+@click.argument("security_group")
+def create_ec2(ami, instance_type, subnet, security_group):
     """
     AMI: ubuntu/amazon-linux
 
     instance_type: t3.micro/t2.small
+
+    subnet: subnet-1/subnet-2
+
+    security_group: Your security group ID in the VPC (e.g., sg-xxxxxxxxx)
     """
     client = connect("ec2")
     ami_options = {
         "ubuntu": "ami-020cba7c55df1f615",
         "amazon-linux": "ami-00ca32bbc84273381"
     }
+    subnet_options = {
+        "subnet-1": "subnet-0468e933b4fdab115",
+        "subnet-2": "subnet-0a8336384b6d3b85b"
+    }
+
+    if not security_group.startswith('sg-'):
+        print(f"Security group ID must start with 'sg-' (got: {security_group})")
+        return
+
     running_instances = instance_list_ec2()
     if running_instances < 2:
         temp_key_name = f"temp-key-{uuid.uuid4().hex[:6]}"
         try:
+            try:
+                client.describe_security_groups(GroupIds=[security_group])
+            except ClientError as e:
+                if 'InvalidGroupId.NotFound' in str(e):
+                    print(f"Security group {security_group} not found")
+                    return
+                else:
+                    print(f"Error validating security group: {e}")
+                    return
+
             key_pair = client.create_key_pair(KeyName=temp_key_name)
             private_key = key_pair['KeyMaterial']
 
@@ -72,31 +98,41 @@ def create_ec2(ami, instance_type):
             print(f"Error creating key pair: {e}")
             return
 
-        response = client.run_instances(
-            ImageId=ami_options[ami.lower()],
-            InstanceType=instance_type,
-            MinCount=1,
-            MaxCount=1,
-            KeyName=temp_key_name,
-            SubnetId="subnet-0468e933b4fdab115",
-            SecurityGroupIds=["sg-0d15f0e90387da6d4"],
-            TagSpecifications=[
-                {
-                    "ResourceType": "instance",
-                    "Tags": [
-                        {"Key": "Name", "Value": f"{OWNER}-{ami}-{instance_type}"},
-                        {"Key": "CreatedBy", "Value": OWNER},
-                    ]
-                }
-            ]
-        )
+        try:
+            response = client.run_instances(
+                ImageId=ami_options[ami.lower()],
+                InstanceType=instance_type,
+                MinCount=1,
+                MaxCount=1,
+                KeyName=temp_key_name,
+                SubnetId=subnet_options[subnet.lower()],
+                SecurityGroupIds=[security_group],
+                TagSpecifications=[
+                    {
+                        "ResourceType": "instance",
+                        "Tags": [
+                            {"Key": "Name", "Value": f"{OWNER}-{ami}-{instance_type}"},
+                            {"Key": "CreatedBy", "Value": OWNER},
+                        ]
+                    }
+                ]
+            )
 
-        instance_id = response["Instances"][0]["InstanceId"]
+            instance_id = response["Instances"][0]["InstanceId"]
 
-        final_key_path = os.path.join(ssh_dir, f"{instance_id}.pem")
-        os.rename(temp_key_path, final_key_path)
-        print(f"Instance created: {instance_id} ({ami}, {instance_type})")
-        print(f"Key pair {final_key_path} created and saved with 400 permissions.")
+            final_key_path = os.path.join(ssh_dir, f"{instance_id}.pem")
+            os.rename(temp_key_path, final_key_path)
+            print(f"Instance created: {instance_id} ({ami}, {instance_type}, {subnet}, {security_group})")
+            print(f"Key pair {final_key_path} created and saved with 400 permissions.")
+
+        except ClientError as e:
+            print(f"Error creating EC2 instance: {e}")
+            try:
+                client.delete_key_pair(KeyName=temp_key_name)
+                os.remove(temp_key_path)
+            except:
+                pass
+            return
 
     else:
         print("You can't have more than 2 running instances.")

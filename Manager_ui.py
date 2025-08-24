@@ -1354,8 +1354,46 @@ def get_hosted_zones_for_combobox():
         print(f"Error: {e}")
         return ["No hosted zones found"]
 
+def delete_zone_clicked(zone_id, zone_name, list_window):
+    """Handle hosted zone deletion from the GUI"""
+    confirmation = ctk.CTkInputDialog(
+        text=f"WARNING: This will permanently delete the hosted zone!\n\n"
+             f"Zone: {zone_name}\nID: {zone_id}\n\n"
+             f"This action cannot be undone!\n\n"
+             f"Type '{zone_name}' to confirm deletion:",
+        title="Confirm Zone Deletion"
+    )
+
+    user_input = confirmation.get_input()
+
+    if user_input != zone_name:
+        print("Zone deletion cancelled - confirmation text did not match")
+        return
+
+    try:
+        runner = CliRunner()
+        result = runner.invoke(delete_route53, [zone_id], input='y')
+
+        output = result.output.strip()
+
+        if "deleted successfully" in output:
+            print(f"Hosted zone '{zone_name}' deleted successfully!")
+            list_window.destroy()
+            open_list_route53_window()
+        elif "Aborted" in output:
+            print("Zone deletion cancelled")
+        elif "does not exist" in output:
+            print(f"Zone '{zone_id}' does not exist")
+        elif "contains DNS records" in output:
+            print(f"Cannot delete zone - it contains DNS records. Delete all custom DNS records first.")
+        else:
+            print(f"Result: {output}")
+
+    except Exception as e:
+        print(f"Error deleting zone: {e}")
+
 def open_list_route53_window():
-    list_window, main_frame = create_window("📋 Hosted Zones List", "800x600")
+    list_window, main_frame = create_window("📋 Hosted Zones List", "900x600")
 
     header = GlowEffect(main_frame)
     header.pack(fill="x", pady=(0, 30))
@@ -1366,11 +1404,11 @@ def open_list_route53_window():
     table_frame = Frame(main_frame)
     table_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
-    scrollable_frame = ctk.CTkScrollableFrame(table_frame, width=750, height=400)
+    scrollable_frame = ctk.CTkScrollableFrame(table_frame, width=850, height=400)
     scrollable_frame.pack(pady=20, padx=20, fill="both", expand=True)
     scrollable_frame.configure(fg_color=COLORS['secondary'])
 
-    headers = ["Zone Name", "Zone ID", "Record Count", "Status"]
+    headers = ["Zone Name", "Zone ID", "Record Count", "Status", "Actions"]
 
     for i, header in enumerate(headers):
         header_label = Label(scrollable_frame, header, 14, "bold")
@@ -1411,9 +1449,29 @@ def open_list_route53_window():
                         cell_frame.grid(row=row, column=col, padx=5, pady=8, sticky="ew")
 
                         cell_label = Label(cell_frame, str(value), 12)
-                        if col == 3:
+                        if col == 3:  # Status column
                             cell_label.configure(text_color=COLORS['success'])
                         cell_label.pack(pady=10)
+
+                    actions_frame = ctk.CTkFrame(scrollable_frame)
+                    actions_frame.configure(
+                        fg_color="transparent",
+                        corner_radius=8
+                    )
+                    actions_frame.grid(row=row, column=4, padx=5, pady=8, sticky="ew")
+
+                    delete_button = Button(
+                        actions_frame,
+                        text="🗑️ Delete",
+                        width=100,
+                        command=lambda zid=zone_id, zname=zone_name: delete_zone_clicked(zid, zname, list_window)
+                    )
+                    delete_button.configure(
+                        fg_color=COLORS['error'],
+                        hover_color="#ff3838",
+                        text_color="white"
+                    )
+                    delete_button.pack(pady=5)
 
                     row += 1
 
@@ -1422,15 +1480,16 @@ def open_list_route53_window():
 
         if row == 1:
             no_zones_label = Label(scrollable_frame, "No hosted zones found", 16)
-            no_zones_label.grid(row=1, column=0, columnspan=4, pady=50)
+            no_zones_label.grid(row=1, column=0, columnspan=5, pady=50)
 
     except Exception as e:
         error_label = Label(scrollable_frame, f"Error: {e}", 16)
         error_label.configure(text_color=COLORS['error'])
-        error_label.grid(row=1, column=0, columnspan=4, pady=50)
+        error_label.grid(row=1, column=0, columnspan=5, pady=50)
 
-    for i in range(len(headers)):
+    for i in range(4):
         scrollable_frame.grid_columnconfigure(i, weight=1)
+    scrollable_frame.grid_columnconfigure(4, weight=0)
 
 
 setup_ec2_tab()
