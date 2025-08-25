@@ -1,14 +1,16 @@
-# AWS Platform CLI
+# AWS Platform CLI & GUI
 
-A self-service command-line tool for developers to provision and manage AWS resources (EC2, S3, Route53) within safe, pre-defined standards.
+A self-service command-line tool and graphical interface for developers to provision and manage AWS resources (EC2, S3, Route53) within safe, pre-defined standards.
 
 ## Features
 
+- **Dual Interface**: Both CLI and modern GUI interface
 - **EC2 Management**: Create, start, stop, terminate, and list EC2 instances
-- **S3 Management**: Create, delete, upload files, and list S3 buckets
+- **S3 Management**: Create, delete, upload files, and list S3 buckets  
 - **Route53 Management**: Create, delete, manage DNS records, and list hosted zones
 - **Resource Tagging**: Consistent tagging for all resources created by the CLI
 - **Safety Constraints**: Built-in limits and confirmations for secure operations
+- **Interactive GUI**: User-friendly graphical interface with real-time feedback
 
 ## Prerequisites
 
@@ -60,12 +62,39 @@ Your AWS user/role needs the following permissions:
 
 3. **Install dependencies:**
    ```bash
-   pip install -r requirements.txt
-   # On Linux/macOS you might need:
    pip3 install -r requirements.txt
+   # On Linux/macOS you might need:
+   sudo pip3 install -r requirements.txt
    ```
 
-4. **Configure AWS credentials:** (see AWS Environment Variables Setup below)
+4. **For GUI support, install system dependencies:**
+   
+   **Windows:**
+   - No additional installation needed (tkinter included with Python)
+   
+   **macOS:**
+   ```bash
+   # tkinter comes with Python on macOS, but if you have issues:
+   brew install python-tk
+   ```
+   
+   **Linux (Ubuntu/Debian):**
+   ```bash
+   sudo apt install python3-tk
+   ```
+   
+   **Linux (CentOS/RHEL/Fedora):**
+   ```bash
+   # CentOS/RHEL:
+   sudo yum install tkinter
+   # or
+   sudo yum install python3-tkinter
+   
+   # Fedora:
+   sudo dnf install python3-tkinter
+   ```
+
+5. **Configure AWS credentials:** (see AWS Environment Variables Setup below)
 
 ### AWS EC2 Instance Setup
 
@@ -90,7 +119,19 @@ Your AWS user/role needs the following permissions:
    sudo pip3 install -r requirements.txt
    ```
 
-4. **Configure AWS credentials:**
+4. **Install GUI dependencies for Amazon Linux:**
+   ```bash
+   # Amazon Linux 2:
+   sudo yum install tkinter -y
+   # or try:
+   sudo yum install python3-tkinter -y
+   
+   # If above doesn't work:
+   sudo amazon-linux-extras install python3.8
+   sudo yum install python38-tkinter -y
+   ```
+
+5. **Configure AWS credentials:**
    ```bash
    export AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY"
    export AWS_SECRET_ACCESS_KEY="YOUR_SECRET_KEY"
@@ -99,7 +140,11 @@ Your AWS user/role needs the following permissions:
 
 5. **Test the installation:**
    ```bash
+   # Test CLI (works everywhere):
    python3 Manager.py --help
+   
+   # Note: GUI cannot run on headless servers like EC2
+   # Use CLI commands instead for server environments
    ```
 
 #### Ubuntu
@@ -123,7 +168,12 @@ Your AWS user/role needs the following permissions:
    sudo pip3 install -r requirements.txt
    ```
 
-4. **Configure AWS credentials:**
+4. **Install GUI dependencies for Ubuntu:**
+   ```bash
+   sudo apt install python3-tk -y
+   ```
+
+5. **Configure AWS credentials:**
    ```bash
    export AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY"
    export AWS_SECRET_ACCESS_KEY="YOUR_SECRET_KEY"
@@ -132,7 +182,11 @@ Your AWS user/role needs the following permissions:
 
 5. **Test the installation:**
    ```bash
+   # Test CLI (works everywhere):
    python3 Manager.py --help
+   
+   # Note: GUI cannot run on headless servers like EC2
+   # Use CLI commands instead for server environments
    ```
 
 ## AWS Environment Variables Setup
@@ -185,10 +239,13 @@ $env:AWS_DEFAULT_REGION = "us-east-1"
 Check that they are set:
 ```powershell
 echo $env:AWS_ACCESS_KEY_ID
+```
+
 **Important Notes for EC2:**
 - Use `python3` and `pip3` instead of `python` and `pip`
 - Default users: `ec2-user` for Amazon Linux, `ubuntu` for Ubuntu
 - If you get permission errors with pip, use `sudo`
+- **GUI cannot run on EC2** - use CLI commands only
 
 ### Verification
 
@@ -208,78 +265,121 @@ echo $env:AWS_SECRET_ACCESS_KEY
 echo $env:AWS_DEFAULT_REGION
 ```
 
-## Usage Examples
+## Usage
 
-### EC2 Instances
+The tool provides both CLI and GUI interfaces:
 
-#### Create Instance
+**GUI Interface**: Best for local development on Windows, macOS, or Linux desktop
+**CLI Interface**: Works everywhere - local machines, servers, EC2 instances
+
+### GUI Interface (Recommended for Local Development)
+
+**Important**: The GUI requires a graphical display and works best on local machines. It **cannot run on headless servers** like AWS EC2 instances without additional setup.
+
+**Supported Environments:**
+- ✅ Local Windows machines
+- ✅ Local macOS machines  
+- ✅ Local Linux with desktop environment
+- ❌ AWS EC2 instances (headless servers)
+- ❌ Remote servers without GUI
+
+Launch the graphical interface:
 ```bash
-python Manager.py ec2 create ubuntu t3.micro
-python Manager.py ec2 create amazon-linux t2.small
+python3 Manager_ui.py
 ```
 
-#### Manage Instance
+**If you get "TclError: no display name and no $DISPLAY environment variable":**
+- This means you're on a headless server (like EC2) without a graphical display
+- Use the CLI instead: `python3 Manager.py --help`
+- The CLI provides all the same functionality
+
+The GUI provides:
+- **Modern Interface**: Clean, intuitive design with real-time feedback
+- **Service Tabs**: Separate tabs for EC2, S3, and Route53 management
+- **Form Validation**: Built-in validation and error handling
+- **Visual Feedback**: Progress indicators and confirmation dialogs
+- **Resource Lists**: Visual tables showing all your resources
+- **One-Click Actions**: Easy resource management with confirmation prompts
+
+### CLI Interface (Command Line Examples)
+
+#### EC2 Instances
+
+**Create Instance (Enhanced with Subnet & Security Group Selection):**
 ```bash
-python Manager.py ec2 manage start i-1234567890abcdef0
-python Manager.py ec2 manage stop i-1234567890abcdef0
-python Manager.py ec2 manage terminate i-1234567890abcdef0
+# New format with subnet and security group selection
+python3 Manager.py ec2 create ubuntu t3.micro subnet-1 sg-0d15f0e90387da6d4
+python3 Manager.py ec2 create amazon-linux t2.small subnet-2 sg-0a8336384b6d3b85b
+
+# Parameters explained:
+# - AMI: ubuntu or amazon-linux
+# - Instance Type: t3.micro or t2.small
+# - Subnet: subnet-1 or subnet-2 (predefined subnets)
+# - Security Group: Your security group ID in the VPC
 ```
 
-#### List Instances
+**Manage Instance:**
 ```bash
-python Manager.py ec2 list
+python3 Manager.py ec2 manage start i-1234567890abcdef0
+python3 Manager.py ec2 manage stop i-1234567890abcdef0
+python3 Manager.py ec2 manage terminate i-1234567890abcdef0
 ```
 
-### S3 Buckets
-
-#### Create Bucket
+**List Instances:**
 ```bash
-python Manager.py s3 create private
-python Manager.py s3 create public  # Requires confirmation
+python3 Manager.py ec2 list
 ```
 
-#### Upload File
+#### S3 Buckets
+
+**Create Bucket:**
 ```bash
-python Manager.py s3 upload /path/to/file.txt bucket-name file.txt
+python3 Manager.py s3 create private
+python3 Manager.py s3 create public  # Requires confirmation
 ```
 
-#### Delete Bucket
+**Upload File:**
 ```bash
-python Manager.py s3 delete s3-bucket-lirchen-abc123
+python3 Manager.py s3 upload /path/to/file.txt bucket-name file.txt
 ```
 
-#### List Buckets
+**Delete Bucket:**
 ```bash
-python Manager.py s3 list
+python3 Manager.py s3 delete s3-bucket-lirchen-abc123
 ```
 
-### Route53 DNS
-
-#### Create Hosted Zone
+**List Buckets:**
 ```bash
-python Manager.py route53 create example.com
+python3 Manager.py s3 list
 ```
 
-#### Manage DNS Records
+#### Route53 DNS
+
+**Create Hosted Zone:**
+```bash
+python3 Manager.py route53 create example.com
+```
+
+**Manage DNS Records:**
 ```bash
 # Create A record
-python Manager.py route53 manage create Z1D633PJN98FT9 www.example.com A 192.168.1.1
+python3 Manager.py route53 manage create Z1D633PJN98FT9 www.example.com A 192.168.1.1
 
 # Update CNAME record
-python Manager.py route53 manage update Z1D633PJN98FT9 api.example.com CNAME api.provider.com
+python3 Manager.py route53 manage update Z1D633PJN98FT9 api.example.com CNAME api.provider.com
 
 # Delete record
-python Manager.py route53 manage delete Z1D633PJN98FT9 old.example.com A 192.168.1.100
+python3 Manager.py route53 manage delete Z1D633PJN98FT9 old.example.com A 192.168.1.100
 ```
 
-#### Delete Hosted Zone
+**Delete Hosted Zone:**
 ```bash
-python Manager.py route53 delete Z1D633PJN98FT9
+python3 Manager.py route53 delete Z1D633PJN98FT9
 ```
 
-#### List Hosted Zones
+**List Hosted Zones:**
 ```bash
-python Manager.py route53 list
+python3 Manager.py route53 list
 ```
 
 ## Safety Constraints
@@ -288,6 +388,8 @@ python Manager.py route53 list
 - **Instance Types**: Only `t3.micro` and `t2.small` allowed
 - **Hard Limit**: Maximum 2 running instances at any time
 - **AMI Options**: Latest Ubuntu or Amazon Linux only
+- **Network**: Predefined VPC with two subnet options
+- **Security**: User must specify their own security group
 
 ### S3 Constraints
 - **Public Buckets**: Requires explicit confirmation
@@ -297,6 +399,28 @@ python Manager.py route53 list
 ### Route53 Constraints
 - **Zone Management**: Only CLI-created zones can be modified
 - **Record Management**: Only records in CLI-created zones can be managed
+- **Zone Deletion**: Available both via CLI and GUI with double confirmation
+
+## GUI Features
+
+### EC2 Management
+- **Visual Instance Creation**: Easy form-based instance creation
+- **Subnet Selection**: Choose between predefined subnets
+- **Security Group Input**: Specify your security group ID
+- **Instance Monitoring**: Real-time status updates
+- **Bulk Operations**: Start, stop, or terminate multiple instances
+
+### S3 Management
+- **Bucket Creation**: Simple bucket creation with privacy options
+- **File Upload**: Drag-and-drop file uploads (planned feature)
+- **Bucket Policies**: Automatic policy management for public buckets
+- **Storage Monitoring**: View bucket sizes and file counts
+
+### Route53 Management
+- **Zone Creation**: Intuitive hosted zone creation
+- **DNS Records**: Easy record management (create, update, delete)
+- **Zone Deletion**: Safe zone deletion with confirmation
+- **Record Types**: Support for A, AAAA, CNAME, MX, TXT, NS, SOA records
 
 ## Tagging Convention
 
@@ -319,37 +443,56 @@ Edit the `OWNER` variable in `Manager.py` to set your identifier:
 OWNER = "your-username"
 ```
 
+### Network Configuration
+
+The tool uses predefined subnets. Update these in your code if needed:
+```python
+subnet_options = {
+    "subnet-1": "subnet-0468e933b4fdab115",  # Your subnet ID 1
+    "subnet-2": "subnet-0a8336384b6d3b85b"   # Your subnet ID 2
+}
+```
+
 ## Error Handling
 
-The CLI provides clear error messages for common scenarios:
+The CLI and GUI provide clear error messages for common scenarios:
 - Resource not found
 - Permission denied
 - Invalid resource states
 - AWS service limits exceeded
+- Network configuration issues
+- Security group validation errors
 
 ## Cleanup Instructions
 
 ### Clean Up All Resources
 
+**Using GUI:**
+- Use the respective "List" sections in each tab
+- Click delete buttons for each resource
+- Follow confirmation prompts
+
+**Using CLI:**
+
 **EC2 Instances:**
 ```bash
-python Manager.py ec2 list
+python3 Manager.py ec2 list
 # Terminate each instance manually:
-python Manager.py ec2 manage terminate i-xxxxxxxxx
+python3 Manager.py ec2 manage terminate i-xxxxxxxxx
 ```
 
 **S3 Buckets:**
 ```bash
-python Manager.py s3 list
+python3 Manager.py s3 list
 # Delete each bucket:
-python Manager.py s3 delete bucket-name
+python3 Manager.py s3 delete bucket-name
 ```
 
 **Route53 Zones:**
 ```bash
-python Manager.py route53 list
+python3 Manager.py route53 list
 # Delete each zone:
-python Manager.py route53 delete zone-id
+python3 Manager.py route53 delete zone-id
 ```
 
 ## Troubleshooting
@@ -372,13 +515,25 @@ python Manager.py route53 delete zone-id
 - S3 bucket names must be globally unique
 - The CLI uses random suffixes to avoid conflicts
 
+**"Security group not found"**
+- Verify the security group ID exists in your VPC
+- Ensure the security group ID format starts with 'sg-'
+
+**GUI Issues:**
+- **"TclError: no display name and no $DISPLAY environment variable"**: You're on a headless server (like EC2). GUI cannot run - use CLI instead.
+- **"ModuleNotFoundError: No module named 'tkinter'"**: Install tkinter (see Dependencies section)
+- **Amazon Linux**: `sudo yum install python3-tkinter -y`
+- **Ubuntu**: `sudo apt install python3-tk -y` 
+- **GUI works only on local machines** with graphical displays
+- **CLI works everywhere**: `python3 Manager.py --help`
+
 ### Getting Help
 
 Use `--help` with any command:
 ```bash
-python Manager.py --help
-python Manager.py ec2 --help
-python Manager.py s3 create --help
+python3 Manager.py --help
+python3 Manager.py ec2 --help
+python3 Manager.py s3 create --help
 ```
 
 ## Security Best Practices
@@ -389,6 +544,8 @@ python Manager.py s3 create --help
 - ✅ Built-in safety constraints
 - ✅ Confirmation prompts for destructive actions
 - ✅ Private-by-default for S3 buckets
+- ✅ Network security with user-specified security groups
+- ✅ GUI input validation and sanitization
 
 ## Dependencies
 
@@ -397,8 +554,40 @@ boto3>=1.26.0
 botocore>=1.29.0
 click>=8.0.0
 tabulate>=0.9.0
+customtkinter>=5.2.0
 ```
+
+**Note about GUI Dependencies:**
+- **Windows**: tkinter comes pre-installed with Python
+- **macOS**: tkinter included, but may need `brew install python-tk` if issues occur
+- **Linux**: Requires manual installation of tkinter:
+  - Ubuntu/Debian: `sudo apt install python3-tk`
+  - CentOS/RHEL: `sudo yum install python3-tkinter`
+  - Fedora: `sudo dnf install python3-tkinter`
+  - Amazon Linux: `sudo yum install tkinter` or `sudo yum install python3-tkinter`
+
+Install all dependencies:
+```bash
+pip3 install -r requirements.txt
+```
+
+## Screenshots
+
+The GUI provides an intuitive interface for:
+- 🚀 **EC2 Tab**: Instance creation and management
+- 📦 **S3 Tab**: Bucket operations and file management  
+- 🌐 **Route53 Tab**: DNS zone and record management
+- 📊 **Resource Lists**: Visual tables with action buttons
 
 ---
 
 **Note**: This tool is designed for development environments. Always review and test in non-production environments first.
+
+## Recent Updates
+
+### v2.0 Features
+- **GUI Interface**: Modern graphical user interface
+- **Enhanced EC2 Creation**: Subnet and security group selection
+- **Route53 Zone Deletion**: GUI support for hosted zone deletion
+- **Improved Error Handling**: Better validation and user feedback
+- **Visual Resource Management**: Intuitive tables and action buttons
