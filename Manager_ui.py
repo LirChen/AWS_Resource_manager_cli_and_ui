@@ -305,7 +305,7 @@ def open_create_ec2_window():
     form_frame = Frame(main_frame)
     form_frame.pack(fill="x", padx=20, pady=20)
 
-    ami_label = Label(form_frame, "🖥️ Choose AMI:", 14, "bold")
+    ami_label = Label(form_frame, "Choose AMI:", 14, "bold")
     ami_label.pack(pady=(20, 5))
 
     ami_dropdown = ComboBox(
@@ -316,7 +316,7 @@ def open_create_ec2_window():
     ami_dropdown.pack(pady=(0, 20))
     ami_dropdown.set("ubuntu")
 
-    instance_type_label = Label(form_frame, "⚡ Instance Type:", 14, "bold")
+    instance_type_label = Label(form_frame, "Instance Type:", 14, "bold")
     instance_type_label.pack(pady=(20, 5))
 
     instance_type_dropdown = ComboBox(
@@ -327,12 +327,41 @@ def open_create_ec2_window():
     instance_type_dropdown.pack(pady=(0, 20))
     instance_type_dropdown.set("t3.micro")
 
+    subnet_label = Label(form_frame, "Choose Subnet:", 14, "bold")
+    subnet_label.pack(pady=(20, 5))
+
+    subnet_dropdown = ComboBox(
+        form_frame,
+        values=["subnet-1", "subnet-2"],
+        width=300
+    )
+    subnet_dropdown.pack(pady=(0, 20))
+    subnet_dropdown.set("subnet-1")
+
+    subnet_info_label = Label(form_frame, "subnet-1: subnet-0468e933b4fdab115 | subnet-2: subnet-0a8336384b6d3b85b", 10)
+    subnet_info_label.configure(text_color=COLORS['text_secondary'])
+    subnet_info_label.pack(pady=(0, 10))
+
+    security_group_label = Label(form_frame, "Security Group ID:", 14, "bold")
+    security_group_label.pack(pady=(20, 5))
+
+    security_group_entry = Entry(
+        form_frame,
+        placeholder_text="Enter security group ID (e.g., sg-0d15f0e90387da6d4)",
+        width=400
+    )
+    security_group_entry.pack(pady=(0, 20))
+
+    validation_label = Label(form_frame, "Security group must exist in the same VPC as the selected subnet", 10)
+    validation_label.configure(text_color=COLORS['text_secondary'])
+    validation_label.pack(pady=(0, 10))
+
     submit_button = Button(
         form_frame,
         text="✨ Create Instance",
         width=250,
-        command=lambda: create_instance_clicked(ami_dropdown, instance_type_label, instance_type_dropdown,
-                                                create_ec2_window)
+        command=lambda: create_instance_clicked(ami_dropdown, instance_type_dropdown, subnet_dropdown,
+                                                security_group_entry, create_ec2_window)
     )
     submit_button.configure(
         fg_color=COLORS['success'],
@@ -340,13 +369,24 @@ def open_create_ec2_window():
     )
     submit_button.pack(pady=30)
 
-def create_instance_clicked(ami_dropdown, instance_type_label, instance_type_dropdown, window):
+
+def create_instance_clicked(ami_dropdown, instance_type_dropdown, subnet_dropdown, security_group_entry, window):
     ami_value = ami_dropdown.get()
     instance_type_value = instance_type_dropdown.get()
+    subnet_value = subnet_dropdown.get()
+    security_group_value = security_group_entry.get().strip()
+
+    if not security_group_value:
+        print("Please enter a security group ID")
+        return
+
+    if not security_group_value.startswith('sg-'):
+        print("Security group ID must start with 'sg-'")
+        return
 
     try:
         runner = CliRunner()
-        res = runner.invoke(create_ec2, [ami_value, instance_type_value])
+        res = runner.invoke(create_ec2, [ami_value, instance_type_value, subnet_value, security_group_value])
         output = res.output.strip()
 
         if "Instance created:" in output:
@@ -354,8 +394,14 @@ def create_instance_clicked(ami_dropdown, instance_type_label, instance_type_dro
             print(output)
         elif "You can't have more than 2 running instances" in output:
             print("Maximum 2 running instances limit reached")
-        elif "No instances created" in output:
-            print("No instances created by CLI found")
+        elif "Security group" in output and "not found" in output:
+            print("Security group not found - please check the ID")
+        elif "Security group ID must start with 'sg-'" in output:
+            print("Invalid security group format")
+        elif "Error validating security group" in output:
+            print("Error validating security group - check permissions")
+        elif "Error creating EC2 instance" in output:
+            print("Failed to create EC2 instance - check configuration")
         else:
             print(f"Result: {output}")
 
