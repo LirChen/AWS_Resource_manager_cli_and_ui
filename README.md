@@ -161,7 +161,22 @@ Your AWS user/role needs the following permissions:
    cd AWS_Resource_manager_cli_and_ui
    ```
 
-3. **Install dependencies:**
+3. **Install dependencies using Virtual Environment (Recommended for Ubuntu 22.04+):**
+   ```bash
+   # Install python3-venv if not already installed
+   sudo apt install python3-venv python3-full
+   
+   # Create virtual environment
+   python3 -m venv myenv
+   
+   # Activate the environment
+   source myenv/bin/activate
+   
+   # Now install the packages
+   pip install -r requirements.txt
+   ```
+
+   **Alternative for older Ubuntu versions:**
    ```bash
    pip3 install -r requirements.txt
    # If permission issues:
@@ -180,13 +195,29 @@ Your AWS user/role needs the following permissions:
    export AWS_DEFAULT_REGION="us-east-1"
    ```
 
-5. **Test the installation:**
+6. **Test the installation:**
    ```bash
-   # Test CLI (works everywhere):
+   # With virtual environment active:
+   python Manager.py --help
+   
+   # Or if not using virtual environment:
    python3 Manager.py --help
    
    # Note: GUI cannot run on headless servers like EC2
    # Use CLI commands instead for server environments
+   ```
+
+7. **Running the project:**
+   ```bash
+   # Make sure virtual environment is active
+   source myenv/bin/activate
+   
+   # Run your script
+   python Manager.py --help
+   python Manager_ui.py  # For GUI
+   
+   # When finished - deactivate virtual environment
+   deactivate
    ```
 
 ## AWS Environment Variables Setup
@@ -242,9 +273,9 @@ echo $env:AWS_ACCESS_KEY_ID
 ```
 
 **Important Notes for EC2:**
-- Use `python3` and `pip3` instead of `python` and `pip`
+- Use `python3` and `pip3` instead of `python` and `pip` (unless using virtual environment)
 - Default users: `ec2-user` for Amazon Linux, `ubuntu` for Ubuntu
-- If you get permission errors with pip, use `sudo`
+- If you get permission errors with pip, consider using virtual environment or `sudo`
 - **GUI cannot run on EC2** - use CLI commands only
 
 ### Verification
@@ -285,6 +316,10 @@ The tool provides both CLI and GUI interfaces:
 
 Launch the graphical interface:
 ```bash
+# If using virtual environment:
+python Manager_ui.py
+
+# Otherwise:
 python3 Manager_ui.py
 ```
 
@@ -519,6 +554,11 @@ python3 Manager.py route53 delete zone-id
 - Verify the security group ID exists in your VPC
 - Ensure the security group ID format starts with 'sg-'
 
+**"externally-managed-environment" Error (Ubuntu 22.04+):**
+- Use virtual environment as shown in Ubuntu installation section
+- This is a safety feature in newer Ubuntu versions
+- Alternative: Use `--break-system-packages` flag (not recommended)
+
 **GUI Issues:**
 - **"TclError: no display name and no $DISPLAY environment variable"**: You're on a headless server (like EC2). GUI cannot run - use CLI instead.
 - **"ModuleNotFoundError: No module named 'tkinter'"**: Install tkinter (see Dependencies section)
@@ -568,6 +608,10 @@ customtkinter>=5.2.0
 
 Install all dependencies:
 ```bash
+# With virtual environment (recommended for Ubuntu 22.04+):
+pip install -r requirements.txt
+
+# Without virtual environment:
 pip3 install -r requirements.txt
 ```
 
@@ -591,3 +635,4 @@ The GUI provides an intuitive interface for:
 - **Route53 Zone Deletion**: GUI support for hosted zone deletion
 - **Improved Error Handling**: Better validation and user feedback
 - **Visual Resource Management**: Intuitive tables and action buttons
+- **Virtual Environment Support**: Updated installation instructions for Ubuntu 22.04+ compatibility
