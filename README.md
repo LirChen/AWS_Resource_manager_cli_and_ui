@@ -54,8 +54,8 @@ Your AWS user/role needs the following permissions:
 
 2. **Clone the repository:**
    ```bash
-   git clone https://github.com/LirChen/AWS_resource_manager.git
-   cd AWS_resource_manager
+   git clone https://github.com/LirChen/AWS_Resource_manager_cli_and_ui.git
+   cd AWS_Resource_manager_cli_and_ui
    ```
 
 3. **Install dependencies:**
@@ -79,8 +79,8 @@ Your AWS user/role needs the following permissions:
 
 2. **Clone the repository:**
    ```bash
-   git clone https://github.com/LirChen/AWS_resource_manager.git
-   cd AWS_resource_manager
+   git clone https://github.com/LirChen/AWS_Resource_manager_cli_and_ui.git
+   cd AWS_Resource_manager_cli_and_ui
    ```
 
 3. **Install dependencies:**
@@ -112,8 +112,8 @@ Your AWS user/role needs the following permissions:
 
 2. **Clone the repository:**
    ```bash
-   git clone https://github.com/LirChen/AWS_resource_manager.git
-   cd AWS_resource_manager
+   git clone https://github.com/LirChen/AWS_Resource_manager_cli_and_ui.git
+   cd AWS_Resource_manager_cli_and_ui
    ```
 
 3. **Install dependencies:**
